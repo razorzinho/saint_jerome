@@ -1,0 +1,1 @@
+"""Saint Jerome bot skeleton."""

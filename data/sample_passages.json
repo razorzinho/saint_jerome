@@ -1,0 +1,63 @@
+{
+  "translations": [
+    {
+      "id": "sample_pt",
+      "name": "Sample PT",
+      "language": "pt-BR",
+      "canon": "catholic",
+      "copyright": "sample-only",
+      "books": [
+        {
+          "osis": "GEN",
+          "name": "Genesis",
+          "aliases": ["genesis", "gen", "gn"],
+          "chapters": {
+            "1": {
+              "1": "No principio, Deus criou os ceus e a terra.",
+              "2": "A terra era sem forma e vazia; havia trevas sobre a face do abismo, e o Espirito de Deus pairava sobre as aguas.",
+              "3": "Disse Deus: Haja luz. E houve luz."
+            }
+          }
+        },
+        {
+          "osis": "PSA",
+          "name": "Psalms",
+          "aliases": ["salmos", "salmo", "sl", "ps"],
+          "chapters": {
+            "23": {
+              "1": "O Senhor é o meu pastor; nada me faltara.",
+              "2": "Ele me faz repousar em pastos verdejantes e me conduz a aguas tranquilas.",
+              "3": "Refrigera a minha alma e me guia pelas veredas da justica por amor do seu nome."
+            }
+          }
+        },
+        {
+          "osis": "JHN",
+          "name": "John",
+          "aliases": ["joao", "jo", "jo."],
+          "chapters": {
+            "1": {
+              "1": "No princípio era o Verbo; o Verbo estava com Deus, e o Verbo era Deus.",
+              "2": "Ele estava junto de Deus desde o princípio.",
+              "3": "Todas as coisas foram feitas por meio dele; sem ele, nada do que foi feito se fez." 
+            },
+            "3": {
+              "16": "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigenito, para que todo o que nele crer nao pereca, mas tenha a vida eterna.",
+              "17": "Pois Deus enviou o seu Filho ao mundo nao para condenar o mundo, mas para que o mundo fosse salvo por ele."
+            }
+          }
+        },
+        {
+          "osis": "TOB",
+          "name": "Tobit",
+          "aliases": ["tobias", "tob", "tb"],
+          "chapters": {
+            "12": {
+              "8": "Boa coisa e a oracao com jejum, e melhor e a esmola com justica do que a riqueza com iniquidade."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
