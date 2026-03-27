@@ -26,6 +26,7 @@ from saint_jerome.infra.repositories.postgres_guild_liturgy_repository import (
     PostgresGuildLiturgyRepository,
 )
 from saint_jerome.infra.repositories.sqlite_repository import SQLiteBibleRepository
+from saint_jerome.infra.startup_bootstrap import bootstrap_database
 
 logger = logging.getLogger("saint_jerome")
 
@@ -177,6 +178,7 @@ def run() -> None:
         logger.error("DISCORD_TOKEN environment variable not set. Cannot start bot.")
         return
 
+    bootstrap_database(settings)
     bot = create_bot(settings)
     bot.run(settings.discord_token)
 

@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     liturgy_request_timeout_seconds: float = 15.0
     default_timezone: str = "America/Sao_Paulo"
     sync_commands_on_startup: bool = True
+    auto_migrate_on_startup: bool = True
+    auto_import_biblia_db_on_startup: bool = False
+    biblia_db_source_file: str | None = None
+    biblia_db_books_file: str | None = None
+    biblia_db_source_url: str = "https://raw.githubusercontent.com/Dancrf/biblia-db/main/biblia.json"
+    biblia_db_books_url: str = "https://raw.githubusercontent.com/Dancrf/biblia-db/main/listalivros.json"
 
     @property
     def base_dir(self) -> Path:
