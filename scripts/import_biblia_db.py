@@ -16,11 +16,6 @@ DEFAULT_TRANSLATION_ID = "matos_soares_1956"
 DEFAULT_TRANSLATION_NAME = "Padre Manuel de Matos Soares (1956)"
 DEFAULT_LICENSE = "public-redistribution-claimed-by-source"
 
-BOOK_TESTAMENT_CUTOFF = {
-    "Mt",
-}
-
-
 @dataclass(slots=True, frozen=True)
 class SourceBook:
     abbreviation: str
@@ -29,6 +24,91 @@ class SourceBook:
     testament: str
     canon_order: int
     chapters: list[dict[str, Any]]
+
+
+@dataclass(slots=True, frozen=True)
+class CanonicalBookMetadata:
+    code: str
+    expected_name: str
+    testament: str
+    canon_order: int
+
+
+BOOK_METADATA: tuple[CanonicalBookMetadata, ...] = (
+    CanonicalBookMetadata("Gn", "Gênesis", "old", 1),
+    CanonicalBookMetadata("Ex", "Êxodo", "old", 2),
+    CanonicalBookMetadata("Lv", "Levítico", "old", 3),
+    CanonicalBookMetadata("Nm", "Números", "old", 4),
+    CanonicalBookMetadata("Dt", "Deuteronómio", "old", 5),
+    CanonicalBookMetadata("Js", "Livro de Josué", "old", 6),
+    CanonicalBookMetadata("Ju", "Livro dos Juízes", "old", 7),
+    CanonicalBookMetadata("Rt", "Livro de Rute", "old", 8),
+    CanonicalBookMetadata("1Sm", "Livro Primeiro de Samuel", "old", 9),
+    CanonicalBookMetadata("2Sm", "Livro Segundo de Samuel", "old", 10),
+    CanonicalBookMetadata("1Rs", "Livro Primeiro dos Reis", "old", 11),
+    CanonicalBookMetadata("2Rs", "Livro Segundo dos Reis", "old", 12),
+    CanonicalBookMetadata("1Pa", "Livro Primeiro das Crónicas", "old", 13),
+    CanonicalBookMetadata("2Pa", "Livro Segundo das Crónicas", "old", 14),
+    CanonicalBookMetadata("Esd", "Livro de Esdras", "old", 15),
+    CanonicalBookMetadata("Ne", "Livro de Neemias", "old", 16),
+    CanonicalBookMetadata("Tob", "Livro de Tobias", "old", 17),
+    CanonicalBookMetadata("Jdi", "Livro de Judit", "old", 18),
+    CanonicalBookMetadata("Est", "Livro de Ester", "old", 19),
+    CanonicalBookMetadata("1Ma", "Livro Primeiro dos Macabeus", "old", 20),
+    CanonicalBookMetadata("2Ma", "Livro Segundo dos Macabeus", "old", 21),
+    CanonicalBookMetadata("Job", "Livro de Job (Jó)", "old", 22),
+    CanonicalBookMetadata("Ps", "Salmos", "old", 23),
+    CanonicalBookMetadata("Pv", "Livro dos Provérbios", "old", 24),
+    CanonicalBookMetadata("Ees", "Livro do Eclesiaste", "old", 25),
+    CanonicalBookMetadata("Cc", "Cânticos dos Cânticos", "old", 26),
+    CanonicalBookMetadata("Sa", "Livro da Sabedoria", "old", 27),
+    CanonicalBookMetadata("Eus", "Eclesiástico", "old", 28),
+    CanonicalBookMetadata("Is", "Profecia de Isaías", "old", 29),
+    CanonicalBookMetadata("Je", "Profecia de Jeremias", "old", 30),
+    CanonicalBookMetadata("Lm", "Trenos ou Lamentações de Jeremias", "old", 31),
+    CanonicalBookMetadata("Ba", "Profecia de Baruch", "old", 32),
+    CanonicalBookMetadata("Ez", "Profecia de Ezequiel", "old", 33),
+    CanonicalBookMetadata("Dn", "Profecia de Daniel", "old", 34),
+    CanonicalBookMetadata("Os", "Oseias", "old", 35),
+    CanonicalBookMetadata("Jl", "Profecia de Joel", "old", 36),
+    CanonicalBookMetadata("Am", "Profecia de Amós", "old", 37),
+    CanonicalBookMetadata("Ab", "Profecia de Abdias", "old", 38),
+    CanonicalBookMetadata("Jn", "Profecia de Jonas", "old", 39),
+    CanonicalBookMetadata("Mic", "Profecia de Miqueias", "old", 40),
+    CanonicalBookMetadata("Na", "Profecia de Naum", "old", 41),
+    CanonicalBookMetadata("Hc", "Profecia de Habucuc", "old", 42),
+    CanonicalBookMetadata("So", "Profecia de Sofonias", "old", 43),
+    CanonicalBookMetadata("Ag", "Profecia de Ageu", "old", 44),
+    CanonicalBookMetadata("Zc", "Profecia de Zacarias", "old", 45),
+    CanonicalBookMetadata("Ml", "Profecia de Malaquias", "old", 46),
+    CanonicalBookMetadata("Mt", "Evangelho segundo S. Mateus", "new", 47),
+    CanonicalBookMetadata("Mc", "Evangelho segundo S. Marcos", "new", 48),
+    CanonicalBookMetadata("Lc", "Evangelho segundo S. Lucas", "new", 49),
+    CanonicalBookMetadata("Jo", "Evangelho segundo S. João", "new", 50),
+    CanonicalBookMetadata("Act", "Atos dos Apóstolos", "new", 51),
+    CanonicalBookMetadata("Rm", "Epístola aos Romanos", "new", 52),
+    CanonicalBookMetadata("1Co", "Primeira Epístola aos Coríntios", "new", 53),
+    CanonicalBookMetadata("2Co", "Segunda Epístola aos Coríntios", "new", 54),
+    CanonicalBookMetadata("Gl", "Epístola aos Galatas", "new", 55),
+    CanonicalBookMetadata("Ef", "Epístola aos Efésios", "new", 56),
+    CanonicalBookMetadata("Fp", "Epístola aos Filipenses", "new", 57),
+    CanonicalBookMetadata("Cl", "Epístola aos Colossenses", "new", 58),
+    CanonicalBookMetadata("1Ts", "Primeira Epístola aos Tessalonicenses", "new", 59),
+    CanonicalBookMetadata("2Ts", "Segunda Epístola aos Tessalonicenses", "new", 60),
+    CanonicalBookMetadata("1Tm", "Primeira Epístola a Timóteo", "new", 61),
+    CanonicalBookMetadata("2Tm", "Segunda Epístola a Timóteo", "new", 62),
+    CanonicalBookMetadata("Tt", "Epístola a Títo", "new", 63),
+    CanonicalBookMetadata("Fm", "Epístola a Filémon", "new", 64),
+    CanonicalBookMetadata("Hb", "Epístola aos Hebreus", "new", 65),
+    CanonicalBookMetadata("Tg", "Epístola de S. Tiago", "new", 66),
+    CanonicalBookMetadata("1Pe", "Primeira Epístola de S. Pedro", "new", 67),
+    CanonicalBookMetadata("2Pe", "Segunda Epístola de S. Pedro", "new", 68),
+    CanonicalBookMetadata("1Jo", "Primeira Epístola de S. João", "new", 69),
+    CanonicalBookMetadata("2Jo", "Segunda Epístolas de S. João", "new", 70),
+    CanonicalBookMetadata("3Jo", "Terceira Epístolas de S. João", "new", 71),
+    CanonicalBookMetadata("Jda", "Epístola de S. Judas", "new", 72),
+    CanonicalBookMetadata("Ap", "Apocalipse de S. João", "new", 73),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -208,6 +288,10 @@ def import_translation(
             (book.abbreviation,),
         ).fetchone()[0]
 
+        connection.execute(
+            "DELETE FROM book_aliases WHERE book_id = ?",
+            (book_id,),
+        )
         _upsert_book_aliases(connection, book_id, book)
         _upsert_verses(connection, translation_id, book_id, book)
 
@@ -273,25 +357,47 @@ def _build_source_books(
     bible_payload: list[dict[str, Any]],
     books_payload: list[dict[str, Any]],
 ) -> list[SourceBook]:
-    if len(bible_payload) != len(books_payload):
+    if len(bible_payload) != len(BOOK_METADATA):
         raise ValueError(
-            "O biblia.json e o listalivros.json nao possuem a mesma quantidade de livros."
+            "O biblia.json nao possui a quantidade esperada de livros."
         )
 
+    chapter_count_by_code = {
+        str(item["livro"]).strip(): int(item["quantidadeCap"])
+        for item in books_payload
+    }
+
     source_books: list[SourceBook] = []
-    new_testament_started = False
-    for index, (book_data, metadata) in enumerate(zip(bible_payload, books_payload, strict=True), start=1):
-        abbreviation = str(metadata["livro"]).strip()
-        if abbreviation in BOOK_TESTAMENT_CUTOFF:
-            new_testament_started = True
+    for book_data, metadata in zip(bible_payload, BOOK_METADATA, strict=True):
+        source_name = str(book_data["livro"]).strip()
+        normalized_source_name = normalize_lookup_text(source_name)
+        normalized_expected_name = normalize_lookup_text(metadata.expected_name)
+        if normalized_source_name != normalized_expected_name:
+            raise ValueError(
+                "A ordem ou o nome dos livros em biblia.json mudou. "
+                f"Esperado: {metadata.expected_name!r}. Recebido: {source_name!r}."
+            )
+
+        chapter_count = chapter_count_by_code.get(metadata.code)
+        if chapter_count is None:
+            raise ValueError(
+                f"O listalivros.json nao possui o codigo esperado: {metadata.code!r}."
+            )
+
+        actual_chapter_count = len(book_data.get("capitulos", []))
+        if actual_chapter_count != chapter_count:
+            raise ValueError(
+                f"Quantidade de capitulos inconsistente para {metadata.code}: "
+                f"listalivros={chapter_count}, biblia={actual_chapter_count}."
+            )
 
         source_books.append(
             SourceBook(
-                abbreviation=abbreviation,
-                chapter_count=int(metadata["quantidadeCap"]),
-                name=str(book_data["livro"]).strip(),
-                testament="new" if new_testament_started else "old",
-                canon_order=index,
+                abbreviation=metadata.code,
+                chapter_count=chapter_count,
+                name=source_name,
+                testament=metadata.testament,
+                canon_order=metadata.canon_order,
                 chapters=list(book_data.get("capitulos", [])),
             )
         )
@@ -330,7 +436,7 @@ def _extra_aliases_for_book(abbreviation: str, name: str) -> set[str]:
         "Tob": {"tobias", "tb"},
         "Jdi": {"judite", "jdt"},
         "Est": {"ester"},
-        "Job": {"jo"},
+        "Job": set(),
         "Ps": {"salmo", "salmos", "sl"},
         "Pv": {"proverbios", "prov"},
         "Ees": {"eclesiastes", "ec"},
@@ -360,7 +466,7 @@ def _extra_aliases_for_book(abbreviation: str, name: str) -> set[str]:
         "Mt": {"mateus", "mat"},
         "Mc": {"marcos"},
         "Lc": {"lucas", "luc"},
-        "Jo": {"joao", "john", "jn"},
+        "Jo": {"joao", "john"},
         "Act": {"atos", "atos dos apostolos", "at"},
         "Rm": {"romanos"},
         "1Co": {"1 corintios", "i corintios"},

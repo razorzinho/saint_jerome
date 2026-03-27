@@ -4,6 +4,8 @@ import sqlite3
 from pathlib import Path
 
 from scripts.import_biblia_db import (
+    BOOK_METADATA,
+    SourceBook,
     _build_source_books,
     apply_sqlite_migration,
     import_translation,
@@ -11,10 +13,14 @@ from scripts.import_biblia_db import (
 
 
 def test_import_biblia_db_populates_normalized_schema(tmp_path: Path) -> None:
-    bible_payload = [
-        {
-            "livro": "Gênesis",
-            "capitulos": [
+    source_books = [
+        SourceBook(
+            abbreviation="Gn",
+            chapter_count=1,
+            name="Gênesis",
+            testament="old",
+            canon_order=1,
+            chapters=[
                 {
                     "capitulo": 1,
                     "versiculos": [
@@ -23,10 +29,14 @@ def test_import_biblia_db_populates_normalized_schema(tmp_path: Path) -> None:
                     ],
                 }
             ],
-        },
-        {
-            "livro": "Mateus",
-            "capitulos": [
+        ),
+        SourceBook(
+            abbreviation="Mt",
+            chapter_count=1,
+            name="Evangelho segundo S. Mateus",
+            testament="new",
+            canon_order=47,
+            chapters=[
                 {
                     "capitulo": 1,
                     "versiculos": [
@@ -34,14 +44,8 @@ def test_import_biblia_db_populates_normalized_schema(tmp_path: Path) -> None:
                     ],
                 }
             ],
-        },
+        ),
     ]
-    books_payload = [
-        {"livro": "Gn", "quantidadeCap": 50},
-        {"livro": "Mt", "quantidadeCap": 28},
-    ]
-
-    source_books = _build_source_books(bible_payload, books_payload)
     db_path = tmp_path / "test.db"
     connection = sqlite3.connect(db_path)
     try:
@@ -85,3 +89,37 @@ def test_import_biblia_db_populates_normalized_schema(tmp_path: Path) -> None:
         assert alias_exists == 1
     finally:
         connection.close()
+
+
+def test_build_source_books_uses_stable_metadata_instead_of_positional_codes() -> None:
+    bible_payload = []
+    books_payload = []
+
+    for metadata in BOOK_METADATA:
+        bible_payload.append(
+            {
+                "livro": metadata.expected_name,
+                "capitulos": [
+                    {
+                        "capitulo": 1,
+                        "versiculos": [
+                            {
+                                "numero": 1,
+                                "texto": f"Texto de teste para {metadata.code}.",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+        books_payload.append({"livro": metadata.code, "quantidadeCap": 1})
+
+    source_books = _build_source_books(bible_payload, books_payload)
+
+    assert source_books[19].abbreviation == "1Ma"
+    assert source_books[19].name == "Livro Primeiro dos Macabeus"
+    assert source_books[20].abbreviation == "2Ma"
+    assert source_books[21].abbreviation == "Job"
+    assert source_books[22].abbreviation == "Ps"
+    assert source_books[27].abbreviation == "Eus"
+    assert source_books[49].abbreviation == "Jo"
