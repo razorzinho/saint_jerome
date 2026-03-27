@@ -118,12 +118,13 @@ class SQLiteBibleRepository(BibleRepository):
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
                 """
-                SELECT DISTINCT b.id
+                SELECT b.id
                 FROM book_aliases ba
                 JOIN books b ON b.id = ba.book_id
                 JOIN verses v ON v.book_id = b.id
                 WHERE ba.normalized_alias = ?
                   AND v.translation_id = ?
+                ORDER BY b.canon_order
                 LIMIT 1
                 """,
                 (normalized_alias, translation_id),

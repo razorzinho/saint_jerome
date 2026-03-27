@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Awaitable, Callable
 
 from saint_jerome.app.services.bible_service import BibleService
 from saint_jerome.app.services.guild_liturgy_service import GuildLiturgyService
@@ -16,6 +17,11 @@ class BotContainer:
     liturgy_service: LiturgyService
     guild_liturgy_service: GuildLiturgyService
     settings: Settings
+    shutdown_callbacks: tuple[Callable[[], Awaitable[None]], ...] = ()
+
+    async def close(self) -> None:
+        for callback in self.shutdown_callbacks:
+            await callback()
 
 
 def build_container(
@@ -24,6 +30,7 @@ def build_container(
     liturgy_service: LiturgyService,
     guild_liturgy_service: GuildLiturgyService,
     settings: Settings,
+    shutdown_callbacks: tuple[Callable[[], Awaitable[None]], ...] = (),
 ) -> BotContainer:
     return BotContainer(
         parser=ReferenceParser(),
@@ -31,4 +38,5 @@ def build_container(
         liturgy_service=liturgy_service,
         guild_liturgy_service=guild_liturgy_service,
         settings=settings,
+        shutdown_callbacks=shutdown_callbacks,
     )

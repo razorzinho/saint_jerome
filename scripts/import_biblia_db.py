@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.request import urlopen
+
+if TYPE_CHECKING:
+    import asyncpg
+else:
+    try:
+        import asyncpg
+    except ModuleNotFoundError:  # pragma: no cover - depends on optional runtime setup
+        asyncpg = None  # type: ignore[assignment]
 
 from saint_jerome.domain.text_normalization import normalize_lookup_text
 
@@ -113,12 +122,22 @@ BOOK_METADATA: tuple[CanonicalBookMetadata, ...] = (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Importa a Biblia do repositorio Dancrf/biblia-db para SQLite.",
+        description="Importa a Biblia do repositorio Dancrf/biblia-db para SQLite ou PostgreSQL.",
+    )
+    parser.add_argument(
+        "--backend",
+        choices=("sqlite", "postgres"),
+        default="sqlite",
+        help="Backend de banco de dados de destino.",
     )
     parser.add_argument(
         "--db-path",
         default=str(Path("data") / "saint_jerome.db"),
         help="Caminho do banco SQLite de destino.",
+    )
+    parser.add_argument(
+        "--database-url",
+        help="Connection string do PostgreSQL/Supabase.",
     )
     parser.add_argument(
         "--source-file",
@@ -179,39 +198,144 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     project_root = Path(__file__).resolve().parents[1]
-    db_path = Path(args.db_path)
-    if not db_path.is_absolute():
-        db_path = project_root / db_path
 
     bible_payload = _load_json(args.source_file, args.source_url)
     books_payload = _load_json(args.books_file, args.books_url)
     source_books = _build_source_books(bible_payload, books_payload)
 
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
-    try:
-        connection.execute("PRAGMA foreign_keys = ON")
-        apply_sqlite_migration(connection, project_root / "migrations" / "sqlite" / "001_create_bible_schema.sql")
-        import_translation(
-            connection=connection,
-            source_books=source_books,
-            translation_id=args.translation_id,
-            translation_name=args.translation_name,
-            language=args.language,
-            canon=args.canon,
-            source_label=args.source_label,
-            license_label=args.license_label,
-            purge_translation=args.purge_translation,
+    if args.backend == "postgres":
+        if asyncpg is None:
+            raise RuntimeError(
+                "O backend postgres requer a dependência 'asyncpg' instalada."
+            )
+        if not args.database_url:
+            raise ValueError(
+                "--database-url é obrigatório quando --backend=postgres."
+            )
+        asyncio.run(
+            import_translation_postgres(
+                database_url=args.database_url,
+                project_root=project_root,
+                source_books=source_books,
+                translation_id=args.translation_id,
+                translation_name=args.translation_name,
+                language=args.language,
+                canon=args.canon,
+                source_label=args.source_label,
+                license_label=args.license_label,
+                purge_translation=args.purge_translation,
+            )
         )
-        connection.commit()
-    finally:
-        connection.close()
+        print("Import completed into PostgreSQL")
+        return
 
+    db_path = Path(args.db_path)
+    if not db_path.is_absolute():
+        db_path = project_root / db_path
+
+    import_translation_sqlite(
+        db_path=db_path,
+        project_root=project_root,
+        source_books=source_books,
+        translation_id=args.translation_id,
+        translation_name=args.translation_name,
+        language=args.language,
+        canon=args.canon,
+        source_label=args.source_label,
+        license_label=args.license_label,
+        purge_translation=args.purge_translation,
+    )
     print(f"Import completed into {db_path}")
 
 
 def apply_sqlite_migration(connection: sqlite3.Connection, migration_file: Path) -> None:
     connection.executescript(migration_file.read_text(encoding="utf-8"))
+
+
+def import_translation_sqlite(
+    *,
+    db_path: Path,
+    project_root: Path,
+    source_books: list[SourceBook],
+    translation_id: str,
+    translation_name: str,
+    language: str,
+    canon: str,
+    source_label: str,
+    license_label: str,
+    purge_translation: bool,
+) -> None:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        apply_sqlite_migration(
+            connection,
+            project_root / "migrations" / "sqlite" / "001_create_bible_schema.sql",
+        )
+        import_translation(
+            connection=connection,
+            source_books=source_books,
+            translation_id=translation_id,
+            translation_name=translation_name,
+            language=language,
+            canon=canon,
+            source_label=source_label,
+            license_label=license_label,
+            purge_translation=purge_translation,
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+async def import_translation_postgres(
+    *,
+    database_url: str,
+    project_root: Path,
+    source_books: list[SourceBook],
+    translation_id: str,
+    translation_name: str,
+    language: str,
+    canon: str,
+    source_label: str,
+    license_label: str,
+    purge_translation: bool,
+) -> None:
+    if asyncpg is None:
+        raise RuntimeError(
+            "O backend postgres requer a dependência 'asyncpg' instalada."
+        )
+    connection = await asyncpg.connect(database_url)
+    try:
+        await _execute_postgres_script(
+            connection,
+            (project_root / "migrations" / "postgres" / "001_create_bible_schema.sql").read_text(
+                encoding="utf-8"
+            ),
+        )
+        await import_translation_async(
+            connection=connection,
+            source_books=source_books,
+            translation_id=translation_id,
+            translation_name=translation_name,
+            language=language,
+            canon=canon,
+            source_label=source_label,
+            license_label=license_label,
+            purge_translation=purge_translation,
+        )
+    finally:
+        await connection.close()
+
+
+async def _execute_postgres_script(
+    connection: "asyncpg.Connection",
+    sql_script: str,
+) -> None:
+    statements = [statement.strip() for statement in sql_script.split(";") if statement.strip()]
+    for statement in statements:
+        await connection.execute(statement)
 
 
 def import_translation(
@@ -296,6 +420,86 @@ def import_translation(
         _upsert_verses(connection, translation_id, book_id, book)
 
 
+async def import_translation_async(
+    *,
+    connection: "asyncpg.Connection",
+    source_books: list[SourceBook],
+    translation_id: str,
+    translation_name: str,
+    language: str,
+    canon: str,
+    source_label: str,
+    license_label: str,
+    purge_translation: bool,
+) -> None:
+    metadata_json = json.dumps(
+        {
+            "importer": "scripts/import_biblia_db.py",
+            "source": source_label,
+        },
+        ensure_ascii=False,
+    )
+
+    async with connection.transaction():
+        await connection.execute(
+            """
+            INSERT INTO translations (id, name, language, canon, source, license, metadata_json)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                language = excluded.language,
+                canon = excluded.canon,
+                source = excluded.source,
+                license = excluded.license,
+                metadata_json = excluded.metadata_json
+            """,
+            translation_id,
+            translation_name,
+            language,
+            canon,
+            source_label,
+            license_label,
+            metadata_json,
+        )
+
+        if purge_translation:
+            await connection.execute(
+                "DELETE FROM verses WHERE translation_id = $1",
+                translation_id,
+            )
+
+        for book in source_books:
+            await connection.execute(
+                """
+                INSERT INTO books (code, abbreviation, name, testament, canon_order, chapter_count)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT(code) DO UPDATE SET
+                    abbreviation = excluded.abbreviation,
+                    name = excluded.name,
+                    testament = excluded.testament,
+                    canon_order = excluded.canon_order,
+                    chapter_count = excluded.chapter_count
+                """,
+                book.abbreviation,
+                book.abbreviation,
+                book.name,
+                book.testament,
+                book.canon_order,
+                book.chapter_count,
+            )
+            book_id = await connection.fetchval(
+                "SELECT id FROM books WHERE code = $1",
+                book.abbreviation,
+            )
+
+            await connection.execute(
+                "DELETE FROM book_aliases WHERE book_id = $1",
+                book_id,
+            )
+            await _upsert_book_aliases_async(connection, int(book_id), book)
+            await _upsert_verses_async(connection, translation_id, int(book_id), book)
+
+
 def _upsert_book_aliases(
     connection: sqlite3.Connection,
     book_id: int,
@@ -327,6 +531,35 @@ def _upsert_book_aliases(
         )
 
 
+async def _upsert_book_aliases_async(
+    connection: "asyncpg.Connection",
+    book_id: int,
+    book: SourceBook,
+) -> None:
+    aliases = {
+        book.abbreviation,
+        book.name,
+        normalize_lookup_text(book.abbreviation),
+        normalize_lookup_text(book.name),
+    }
+    aliases.update(_extra_aliases_for_book(book.abbreviation, book.name))
+
+    for alias in aliases:
+        if not alias:
+            continue
+        await connection.execute(
+            """
+            INSERT INTO book_aliases (book_id, alias, normalized_alias)
+            VALUES ($1, $2, $3)
+            ON CONFLICT(book_id, normalized_alias) DO UPDATE SET
+                alias = excluded.alias
+            """,
+            book_id,
+            alias,
+            normalize_lookup_text(alias),
+        )
+
+
 def _upsert_verses(
     connection: sqlite3.Connection,
     translation_id: str,
@@ -350,6 +583,30 @@ def _upsert_verses(
                     int(verse["numero"]),
                     str(verse["texto"]).strip(),
                 ),
+            )
+
+
+async def _upsert_verses_async(
+    connection: "asyncpg.Connection",
+    translation_id: str,
+    book_id: int,
+    book: SourceBook,
+) -> None:
+    for chapter in book.chapters:
+        chapter_number = int(chapter["capitulo"])
+        for verse in chapter.get("versiculos", []):
+            await connection.execute(
+                """
+                INSERT INTO verses (translation_id, book_id, chapter, verse, text)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT(translation_id, book_id, chapter, verse) DO UPDATE SET
+                    text = excluded.text
+                """,
+                translation_id,
+                book_id,
+                chapter_number,
+                int(verse["numero"]),
+                str(verse["texto"]).strip(),
             )
 
 
