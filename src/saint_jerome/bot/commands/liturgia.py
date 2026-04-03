@@ -6,6 +6,9 @@ import discord
 
 from saint_jerome.domain.liturgy import DailyLiturgy, ReadingOption
 
+EMBED_DESCRIPTION_LIMIT = 3900
+EMBED_TOTAL_CHAR_LIMIT = 6000
+
 SECTION_LABELS = {
     "primeiraLeitura": "Primeira Leitura",
     "salmo": "Salmo",
@@ -97,7 +100,11 @@ def build_liturgy_period_embeds(liturgies: list[DailyLiturgy]) -> list[discord.E
             lines.append(f"{label}: {first_option.reference}")
 
         value = "\n".join(lines)
-        if len(current_embed.fields) >= 8:
+        field_name = f"{item.date} • {item.liturgy}"
+        if (
+            len(current_embed.fields) >= 8
+            or get_embed_character_count(current_embed) + len(field_name) + len(value[:1024]) > EMBED_TOTAL_CHAR_LIMIT
+        ):
             embeds.append(current_embed)
             current_embed = discord.Embed(
                 title="Liturgia Diária • Próximos dias",
@@ -105,7 +112,7 @@ def build_liturgy_period_embeds(liturgies: list[DailyLiturgy]) -> list[discord.E
             )
 
         current_embed.add_field(
-            name=f"{item.date} • {item.liturgy}",
+            name=field_name,
             value=value[:1024],
             inline=False,
         )
@@ -135,7 +142,7 @@ def _build_reading_embeds(label: str, option: ReadingOption, color: discord.Colo
 
 
 def _split_into_embeds(*, title: str, body: str, color: discord.Color) -> list[discord.Embed]:
-    chunks = _chunk_text(body.strip(), max_length=3900)
+    chunks = _chunk_text(body.strip(), max_length=EMBED_DESCRIPTION_LIMIT)
     if not chunks:
         chunks = ["(Sem conteúdo)"]
 
@@ -224,6 +231,19 @@ def _set_page_footers(embeds: list[discord.Embed]) -> None:
 
     for index, embed in enumerate(embeds, start=1):
         embed.set_footer(text=f"Página {index} de {len(embeds)}")
+
+
+def get_embed_character_count(embed: discord.Embed) -> int:
+    total = len(embed.title or "") + len(embed.description or "")
+    total += len(embed.footer.text) if embed.footer else 0
+
+    if embed.author:
+        total += len(embed.author.name or "")
+
+    for field in embed.fields:
+        total += len(field.name) + len(field.value)
+
+    return total
 
 
 def _prettify_key(value: str) -> str:

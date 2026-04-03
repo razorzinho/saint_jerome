@@ -9,12 +9,17 @@ from saint_jerome.domain.text_normalization import normalize_lookup_text
 REFERENCE_PATTERN = re.compile(
     r"^\s*(?P<book>[1-3]?\s*[A-Za-zÀ-ÿ.]+(?:\s+[A-Za-zÀ-ÿ.]+)*)\s+"
     r"(?P<chapter>\d+)"
-    r"(?:\:(?P<verse_start>\d+)(?:-(?P<verse_end>\d+))?)?\s*"
+    r"(?:\s*[:.,]\s*(?P<verse_start>\d+)(?:\s*[-–—]\s*(?P<verse_end>\d+))?)?\s*"
     r"(?P<translation>[A-Za-z0-9_-]+)?\s*$"
 )
 
 INLINE_PATTERN = re.compile(
-    r"(?i)\b([1-3]?\s*[a-záéíóúâêîôûãõç]+(?:\s+[a-záéíóúâêîôûãõç]+)*)\s+(\d+)\s*:\s*(\d+)(?:\s*-\s*(\d+))?\b"
+    r"(?i)(?<![A-Za-z0-9])"
+    r"(?P<book>[1-3]?\s*[A-Za-zÀ-ÿ.]+(?:\s+[A-Za-zÀ-ÿ.]+){0,3})"
+    r"\s+"
+    r"(?P<chapter>\d+)"
+    r"(?:\s*[:.,]\s*(?P<verse_start>\d+)(?:\s*[-–—]\s*(?P<verse_end>\d+))?)?"
+    r"(?=$|[\s,.;:!?()\[\]{}\"'])"
 )
 
 
@@ -39,18 +44,28 @@ class ReferenceParser:
         )
 
     def extract_all(self, text: str) -> list[Reference]:
-        references = []
+        references: list[Reference] = []
+        seen: set[tuple[str, int, int | None, int | None]] = set()
+
         for match in INLINE_PATTERN.finditer(text):
-            book, chapter, verse_start, verse_end = match.groups()
-            references.append(
-                Reference(
-                    book_alias=self._normalize_book(book),
-                    chapter=int(chapter),
-                    verse_start=self._to_int(verse_start),
-                    verse_end=self._to_int(verse_end),
-                    translation=None,
-                )
+            groups = match.groupdict()
+            reference = Reference(
+                book_alias=self._normalize_book(groups["book"]),
+                chapter=int(groups["chapter"]),
+                verse_start=self._to_int(groups["verse_start"]),
+                verse_end=self._to_int(groups["verse_end"]),
+                translation=None,
             )
+            key = (
+                reference.book_alias,
+                reference.chapter,
+                reference.verse_start,
+                reference.verse_end,
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            references.append(reference)
         return references
 
     @staticmethod

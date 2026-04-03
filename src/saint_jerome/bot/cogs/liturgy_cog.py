@@ -10,11 +10,14 @@ from discord.ext import commands, tasks
 from saint_jerome.bot.commands.liturgia import (
     build_liturgy_embeds,
     build_liturgy_period_embeds,
+    get_embed_character_count,
 )
 from saint_jerome.bot.main import SaintJeromeBot
 from saint_jerome.infra.clients.liturgy_api import LiturgyApiError
 
 logger = logging.getLogger("saint_jerome.liturgy")
+MAX_EMBEDS_PER_MESSAGE = 10
+MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000
 
 
 class LiturgyCog(commands.Cog):
@@ -258,8 +261,24 @@ class LiturgyCog(commands.Cog):
         destination: discord.Webhook | discord.abc.Messageable,
         embeds: list[discord.Embed],
     ) -> None:
-        for start in range(0, len(embeds), 10):
-            await destination.send(embeds=embeds[start : start + 10])
+        batch: list[discord.Embed] = []
+        batch_chars = 0
+
+        for embed in embeds:
+            embed_chars = get_embed_character_count(embed)
+            would_exceed_count = len(batch) >= MAX_EMBEDS_PER_MESSAGE
+            would_exceed_chars = batch_chars + embed_chars > MAX_EMBED_CHARACTERS_PER_MESSAGE
+
+            if batch and (would_exceed_count or would_exceed_chars):
+                await destination.send(embeds=batch)
+                batch = []
+                batch_chars = 0
+
+            batch.append(embed)
+            batch_chars += embed_chars
+
+        if batch:
+            await destination.send(embeds=batch)
 
 
 async def setup(bot: SaintJeromeBot) -> None:
